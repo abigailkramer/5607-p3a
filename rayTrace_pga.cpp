@@ -21,6 +21,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION //only place once in one .cpp files
 #include "image_lib.h" //Defines an image class and a color class
 
+//enables use of M_PI
+#define _USE_MATH_DEFINES
+
 //#3D PGA
 #include "PGA_3D.h"
 
