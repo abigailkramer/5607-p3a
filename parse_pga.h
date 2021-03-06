@@ -45,15 +45,17 @@ std::vector<Color> ambient_colors;
 std::vector<Color> diffuse_colors;
 std::vector<Color> specular_colors;
 std::vector<Color> transmissive_colors;
+std::vector<float> ns;
+std::vector<float> ior;
 int numCircles = 0;
 
 //Material Parameters
 // Color ambient_color = Color(0,0,0);
 // Color diffuse_color = Color(1,1,1);
 // Color specular_color = Color(0,0,0);
-int ns = 0;
+// int ns = 0;
 // Color transmissive_color = Color(0,0,0);
-float ior;
+// float ior;
 
 //Lighting Parameters
 Color dir_intensity;  // is Color the right type?
@@ -187,12 +189,14 @@ void parseSceneFile(std::string fileName){
       diffuse_colors.push_back(Color(dr,dg,db));
       specular_colors.push_back(Color(sr,sg,sb));
       transmissive_colors.push_back(Color(tr,tg,tb));
+      ns.push_back(n);
+      ior.push_back(io);
       // ambient_color = Color(ar,ag,ab);
       // diffuse_color = Color(dr,dg,db);
       // specular_color = Color(sr,sg,sb);
       // transmissive_color = Color(tr,tg,tb);
-      ns = n;
-      ior = io;
+      // ns = n;
+      // ior = io;
     }
 // Lighting Parameters
     else if (cmd == "directional_light:") {
