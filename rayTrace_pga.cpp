@@ -81,22 +81,37 @@ int main(int argc, char** argv){
 
   Image outputImg = Image(img_width,img_height);
   auto t_start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < img_width; i++){
-    for (int j = 0; j < img_height; j++){
-      //TODO: In what way does this assumes the basis is orthonormal?
+
+  for (int i = 0; i < img_width; i++) {
+    for (int j = 0; j < img_height; j++) {
+      outputImg.setPixel(i,j,background);
+    }
+  }
+
+  for (int i = 0; i < img_width; i++) {
+    for (int j = 0; j < img_height; j++) {
       float u = (halfW - (imgW)*((i+0.5)/imgW));
       float v = (halfH - (imgH)*((j+0.5)/imgH));
       Point3D p = eye - d*forward + u*right + v*up;
       Dir3D rayDir = (p - eye); 
-      Line3D rayLine = vee(eye,rayDir).normalized();  //Normalizing here is optional
-      bool hit = raySphereIntersect(eye,rayLine,spherePos,sphereRadius);
-      Color color;
-      if (hit) color = Color(1,1,1);
-      else color = Color(0,0,0);
-      outputImg.setPixel(i,j, color);
-      //outputImg.setPixel(i,j, Color(fabs(i/imgW),fabs(j/imgH),fabs(0))); //TODO: Try this, what is it visualizing?
+      Line3D rayLine = vee(eye,rayDir).normalized();  //Normalizing here is optiona
+
+      // intersect w/ scene
+      // no intersect? -> set pixel to background color
+
+      for (int circ = 0; circ < numCircles; circ++) {
+        bool hit = raySphereIntersect(eye,rayLine,spherePoints[circ],sphereRads[circ]);
+        Color color;
+        if (hit) outputImg.setPixel(i,j,ambient_colors[circ]);
+        // if (hit) color = ambient_colors[circ];
+        // else color = background;
+        // outputImg.setPixel(i,j,color);
+      }
+
+      // compute illumination @ visual point
     }
   }
+
   auto t_end = std::chrono::high_resolution_clock::now();
   printf("Rendering took %.2f ms\n",std::chrono::duration<double, std::milli>(t_end-t_start).count());
 

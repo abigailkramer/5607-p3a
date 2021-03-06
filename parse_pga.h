@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <vector>
 
 //Camera & Scene Parmaters (Global Variables)
 //Here we set default values, override them in parseSceneFile()
@@ -34,16 +35,24 @@ int norm_pos = 0;
 
 // add triangle (v1,v2,v2) & normal_triangle (v1,v2,v3,n1,n2,n3)
 
-Point3D spherePos = Point3D(0,0,2); // maybe change?? we'll need multiple
-float sphereRadius = 1;
+// Point3D spherePos = Point3D(0,0,2); // maybe change?? we'll need multiple
+// float sphereRadius = 1;
 Color background = Color(0,0,0);
 
+std::vector<float> sphereRads;        // allows flexible "list" size?
+std::vector<Point3D> spherePoints;    // do the same for materials - need to coordinate somehow
+std::vector<Color> ambient_colors;
+std::vector<Color> diffuse_colors;
+std::vector<Color> specular_colors;
+std::vector<Color> transmissive_colors;
+int numCircles = 0;
+
 //Material Parameters
-Color ambient_color = Color(0,0,0);
-Color diffuse_color = Color(1,1,1);
-Color specular_color = Color(0,0,0);
+// Color ambient_color = Color(0,0,0);
+// Color diffuse_color = Color(1,1,1);
+// Color specular_color = Color(0,0,0);
 int ns = 0;
-Color transmissive_color = Color(0,0,0);
+// Color transmissive_color = Color(0,0,0);
 float ior;
 
 //Lighting Parameters
@@ -156,8 +165,12 @@ void parseSceneFile(std::string fileName){
     else if (cmd == "sphere:") {
       float x,y,z,r;
       file >> x >> y >> z >> r;
-      spherePos = Point3D(x,y,z);
-      sphereRadius = r;
+      Point3D p = Point3D(x,y,z);
+      spherePoints.push_back(p);
+      sphereRads.push_back(r);
+      numCircles++;
+      // spherePos = Point3D(x,y,z);
+      // sphereRadius = r;
     }
     else if (cmd == "background:") {
       float r,g,b;
@@ -170,10 +183,14 @@ void parseSceneFile(std::string fileName){
       int n;
       file >> ar >> ag >> ab >> dr >> dg >> db;
       file >> sr >> sg >> sb >> n >> tr >> tg >> tb >> io;
-      ambient_color = Color(ar,ag,ab);
-      diffuse_color = Color(dr,dg,db);
-      specular_color = Color(sr,sg,sb);
-      transmissive_color = Color(tr,tg,tb);
+      ambient_colors.push_back(Color(ar,ag,ab));
+      diffuse_colors.push_back(Color(dr,dg,db));
+      specular_colors.push_back(Color(sr,sg,sb));
+      transmissive_colors.push_back(Color(tr,tg,tb));
+      // ambient_color = Color(ar,ag,ab);
+      // diffuse_color = Color(dr,dg,db);
+      // specular_color = Color(sr,sg,sb);
+      // transmissive_color = Color(tr,tg,tb);
       ns = n;
       ior = io;
     }
