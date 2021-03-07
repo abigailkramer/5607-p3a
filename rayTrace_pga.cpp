@@ -82,7 +82,7 @@ int main(int argc, char** argv){
   Image outputImg = Image(img_width,img_height);
   auto t_start = std::chrono::high_resolution_clock::now();
 
-  for (int i = 0; i < img_width; i++) {
+  for (int i = 0; i < img_width; i++) {       // mainly just a placeholder rn i think
     for (int j = 0; j < img_height; j++) {
       outputImg.setPixel(i,j,background);
     }
@@ -99,10 +99,15 @@ int main(int argc, char** argv){
       // intersect w/ scene
       // no intersect? -> set pixel to background color
 
-      for (int circ = 0; circ < numCircles; circ++) {
-        bool hit = raySphereIntersect(eye,rayLine,spherePoints[circ],sphereRads[circ]);
+      for (int sphere = 0; sphere < numSpheres; sphere++) {
+        Sphere s = spheres[sphere];
+        bool hit = raySphereIntersect(eye,rayLine,s.pos,s.radius);
         Color color;
-        if (hit) outputImg.setPixel(i,j,ambient_colors[circ]);
+        if (hit) outputImg.setPixel(i,j,s.ambient);   // need more nuance w/ light --> very basic here
+
+        // bool hit = raySphereIntersect(eye,rayLine,spherePoints[sphere],sphereRads[sphere]);
+        // Color color;
+        // if (hit) outputImg.setPixel(i,j,ambient_colors[sphere]);  // need more nuance w/ light
         // if (hit) color = ambient_colors[circ];
         // else color = background;
         // outputImg.setPixel(i,j,color);

@@ -15,6 +15,7 @@ struct Line3D; //A line in 3D with Plucker-style coordinates P-Q = (x,y,z) and P
 struct IdealLine3D; //An "ideal" line at infinity representing only directionality (x,y,z)
 struct Plane3D; //A plane with the equation: xX + yY + zZ + w = 0 [plane normal is (x,y,z), w indicates distance from orig.]
 struct Motor3D; //An element which applies rotaton or tranlations, can be composed together [isomorphic to dual quaternions]
+struct Sphere; // Point3D position, float radius, ns, ior, Colors ambient, diffuse, spec, transmissive
 
 // ---------------------------------
 //  Define Primatives
@@ -170,6 +171,20 @@ struct Point3D{
   }
   
 };
+
+
+/// Sphere struct
+
+struct Sphere{
+  float radius,ns,ior;
+  Point3D pos;
+  Color ambient, diffuse, specular, transmissive;
+
+  Sphere() {} ;
+
+};
+
+/// Sphere struct
 
 struct Dir3D{
   float x,y,z;

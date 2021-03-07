@@ -35,27 +35,18 @@ int norm_pos = 0;
 
 // add triangle (v1,v2,v2) & normal_triangle (v1,v2,v3,n1,n2,n3)
 
-// Point3D spherePos = Point3D(0,0,2); // maybe change?? we'll need multiple
-// float sphereRadius = 1;
 Color background = Color(0,0,0);
 
-std::vector<float> sphereRads;        // allows flexible "list" size?
-std::vector<Point3D> spherePoints;    // do the same for materials - need to coordinate somehow
-std::vector<Color> ambient_colors;
-std::vector<Color> diffuse_colors;
-std::vector<Color> specular_colors;
-std::vector<Color> transmissive_colors;
-std::vector<float> ns;
-std::vector<float> ior;
-int numCircles = 0;
+std::vector<Sphere> spheres;
+int numSpheres = 0;
 
-//Material Parameters
-// Color ambient_color = Color(0,0,0);
-// Color diffuse_color = Color(1,1,1);
-// Color specular_color = Color(0,0,0);
-// int ns = 0;
-// Color transmissive_color = Color(0,0,0);
-// float ior;
+//Material Parameters - to set as "state" vars
+Color ambient_color = Color(0,0,0);
+Color diffuse_color = Color(1,1,1);
+Color specular_color = Color(0,0,0);
+int ns = 5;
+Color transmissive_color = Color(0,0,0);
+float ior = 1;
 
 //Lighting Parameters
 Color dir_intensity;  // is Color the right type?
@@ -167,12 +158,20 @@ void parseSceneFile(std::string fileName){
     else if (cmd == "sphere:") {
       float x,y,z,r;
       file >> x >> y >> z >> r;
-      Point3D p = Point3D(x,y,z);
-      spherePoints.push_back(p);
-      sphereRads.push_back(r);
-      numCircles++;
-      // spherePos = Point3D(x,y,z);
-      // sphereRadius = r;
+      Sphere s = Sphere();
+      s.pos = Point3D(x,y,z);
+      s.radius = r;
+
+      // set material variables based on current state
+      s.ambient = ambient_color;
+      s.diffuse = diffuse_color;
+      s.specular = specular_color;
+      s.transmissive = transmissive_color;
+      s.ns = ns;
+      s.ior = ior;
+
+      spheres.push_back(s);
+      numSpheres++;
     }
     else if (cmd == "background:") {
       float r,g,b;
@@ -185,18 +184,14 @@ void parseSceneFile(std::string fileName){
       int n;
       file >> ar >> ag >> ab >> dr >> dg >> db;
       file >> sr >> sg >> sb >> n >> tr >> tg >> tb >> io;
-      ambient_colors.push_back(Color(ar,ag,ab));
-      diffuse_colors.push_back(Color(dr,dg,db));
-      specular_colors.push_back(Color(sr,sg,sb));
-      transmissive_colors.push_back(Color(tr,tg,tb));
-      ns.push_back(n);
-      ior.push_back(io);
-      // ambient_color = Color(ar,ag,ab);
-      // diffuse_color = Color(dr,dg,db);
-      // specular_color = Color(sr,sg,sb);
-      // transmissive_color = Color(tr,tg,tb);
-      // ns = n;
-      // ior = io;
+
+      // set new Material state variables
+      ambient_color = Color(ar,ag,ab);
+      diffuse_color = Color(dr,dg,db);
+      specular_color = Color(sr,sg,sb);
+      transmissive_color = Color(tr,tg,tb);
+      ns = n;
+      ior = io;    
     }
 // Lighting Parameters
     else if (cmd == "directional_light:") {
