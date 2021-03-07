@@ -38,7 +38,6 @@ int norm_pos = 0;
 Color background = Color(0,0,0);
 
 std::vector<Sphere> spheres;
-int numSpheres = 0;
 
 //Material Parameters - to set as "state" vars
 Color ambient_color = Color(0,0,0);
@@ -48,19 +47,10 @@ int ns = 5;
 Color transmissive_color = Color(0,0,0);
 float ior = 1;
 
-//Lighting Parameters
-Color dir_intensity;  // is Color the right type?
-Dir3D dir_direction;
-
-Color point_intensity;
-Dir3D point_direction;
-
-Color spot_intensity;
-Point3D spot_location;
-Dir3D spot_direction;
-float angle1;         // points at angles < angle1, light behaves like point
-float angle2;         // points at angles > angle2, light contributes nothing
-                      // points in between, light should fall off smoothly (linear is fine)
+//Lighting Parameters  -- make structs for each light type? to be able to go through them?
+std::vector<DirLight> dir_lights;
+std::vector<PointLight> point_lights;
+std::vector<SpotLight> spot_lights;
 
 Color ambient_light = Color(0,0,0);
 
@@ -171,7 +161,6 @@ void parseSceneFile(std::string fileName){
       s.ior = ior;
 
       spheres.push_back(s);
-      numSpheres++;
     }
     else if (cmd == "background:") {
       float r,g,b;
@@ -197,24 +186,28 @@ void parseSceneFile(std::string fileName){
     else if (cmd == "directional_light:") {
       float r,g,b,x,y,z;
       file >> r >> g >> b >> x >> y >> z;
-      dir_intensity = Color(r,g,b);
-      dir_direction = Dir3D(x,y,z);
+      DirLight d = DirLight();
+      d.direction = Dir3D(x,y,z);
+      d.intensity = Color(r,g,b);
+      dir_lights.push_back(d);
     }
     else if (cmd == "point_light:") {
       float r,g,b,x,y,z;
       file >> r >> g >> b >> x >> y >> z;
-      point_intensity = Color(r,g,b);
-      point_direction = Dir3D(x,y,z);
+      PointLight p = PointLight();
+      p.intensity = Color(r,g,b);
+      p.location = Point3D(x,y,z);
     }
     else if (cmd == "spot_light:") {
       float r,g,b,px,py,pz,dx,dy,dz,a1,a2;
       file >> r >> g >> b >> px >> py >> pz;
       file >> dx >> dy >> dz >> a1 >> a2;
-      spot_intensity = Color(r,g,b);
-      spot_location = Point3D(px,py,pz);
-      spot_direction = Dir3D(dx,dy,dz);
-      angle1 = a1;
-      angle2 = a2;
+      SpotLight s = SpotLight();
+      s.intensity = Color(r,g,b);
+      s.location = Point3D(px,py,pz);
+      s.direction = Dir3D(dx,dy,dz);
+      s.angle1 = a1;
+      s.angle2 = a2;
     }
     else if (cmd == "ambient_light:") {
       float r,g,b;

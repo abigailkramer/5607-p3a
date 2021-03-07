@@ -172,20 +172,6 @@ struct Point3D{
   
 };
 
-
-/// Sphere struct
-
-struct Sphere{
-  float radius,ns,ior;
-  Point3D pos;
-  Color ambient, diffuse, specular, transmissive;
-
-  Sphere() {} ;
-
-};
-
-/// Sphere struct
-
 struct Dir3D{
   float x,y,z;
 
@@ -221,6 +207,50 @@ struct Dir3D{
     printf("%s - %s\n",title, std::string(*this).c_str());
   }
 };
+
+
+// --------------------------------------------------------------------------------
+/// Sphere & Light structs -- added for project3a
+// --------------------------------------------------------------------------------
+
+struct Sphere{
+  float radius,ns,ior;
+  Point3D pos;
+  Color ambient, diffuse, specular, transmissive;
+
+  Sphere() {} ;
+
+};
+
+struct DirLight{
+  Color intensity;
+  Dir3D direction;
+
+  DirLight() {} ;
+};
+
+struct PointLight{
+  Color intensity;
+  Point3D location;
+
+  PointLight() {} ;
+};
+
+struct SpotLight{
+  Color intensity;
+  Point3D location;
+  Dir3D direction;
+  float angle1;         // points at angles < angle1, light behaves like point
+  float angle2;         // points at angles > angle2, light contributes nothing
+                        // points in between, light should fall off smoothly (linear is fine)
+
+  SpotLight() {} ;
+};
+
+// --------------------------------------------------------------------------------
+/// -- end of new additions -- ///
+// --------------------------------------------------------------------------------
+
 
 struct HomogeneousPoint3D{
   float x,y,z,w;
