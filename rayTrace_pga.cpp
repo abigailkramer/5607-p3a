@@ -85,9 +85,10 @@ bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, 
 }
 
 Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo) {  // Scene scene, Ray ray, HitInformation hit
-  float r_cont = 0;
-  float g_cont = 0;
-  float b_cont = 0;
+  // start with ambient_light * ambient response
+  float r_cont = (ambient_light.r*hitInfo.ambient.r);
+  float g_cont = (ambient_light.g*hitInfo.ambient.g);
+  float b_cont = (ambient_light.b*hitInfo.ambient.b);
 
   for (auto& dl : dir_lights) {
     Line3D shadow = vee(hitInfo.hit_point,dl.direction).normalized();
@@ -107,23 +108,39 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
       }
     }
 
-    // float dist = light.location.distTo(p);
     float dist = p.distTo(light.location);
     if (blocked && (shadow_hit.t < dist)) continue;
-    float intensity = 1.0 / (1.0 + dist*dist);
 
     Dir3D N = hitInfo.normal;
-    Dir3D L = lightDir;
-    float n_l = std::max(dot(N,L),0.f);
+    Dir3D L = lightDir.normalized();
+    float n_l = std::max(dot(N,L),0.f);              // between direction of the light source & surface normal
     
-    Dir3D V = p - eye;
-    Dir3D R = L - 2*(dot(L,N)*N);
+    Dir3D V = (eye - p).normalized();
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
     float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
 
-    r_cont += ((n_l * hitInfo.diffuse.r) + (v_r * hitInfo.specular.r)) * light.intensity.r * intensity;
-    g_cont += ((n_l * hitInfo.diffuse.g) + (v_r * hitInfo.specular.g)) * light.intensity.g * intensity;
-    b_cont += ((n_l * hitInfo.diffuse.b) + (v_r * hitInfo.specular.b)) * light.intensity.b * intensity;
-      // I = Ie + KaIa + sigmaL( Kd(N*L) + Ks(V*R)^ns )*SL IL /// <-- no reflection or refraction   
+    float contribute_r = 0.0;
+    float contribute_g = 0.0;
+    float contribute_b = 0.0;
+
+    contribute_r += ((n_l * hitInfo.diffuse.r));
+    contribute_g += ((n_l * hitInfo.diffuse.g));
+    contribute_b += ((n_l * hitInfo.diffuse.b));
+
+    contribute_r += ((v_r * hitInfo.specular.r));     // not doing what it should be
+    contribute_g += ((v_r * hitInfo.specular.g));
+    contribute_b += ((v_r * hitInfo.specular.b));
+
+    float attenuation = 1.0 / (1.0 + dist*dist);
+
+    contribute_r *= light.intensity.r*attenuation;
+    contribute_g *= light.intensity.g*attenuation;
+    contribute_b *= light.intensity.b*attenuation;
+
+    r_cont += contribute_r;
+    g_cont += contribute_g;
+    b_cont += contribute_b;
+      // I = Ie + KaIa + sigmaL( Kd(N*L) + Ks(V*R)^ns )*SL*IL /// <-- no reflection or refraction   
 
   }
 
@@ -131,15 +148,10 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
     
   }
 
-  // ambient_light * ambient response
-  r_cont += (ambient_light.r*hitInfo.ambient.r);
-  g_cont += (ambient_light.g*hitInfo.ambient.g);
-  b_cont += (ambient_light.b*hitInfo.ambient.b);
-
   return Color(r_cont,g_cont,b_cont);
 }
 
-Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {   // this is messing up the order rn?
+Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {
   float currentDist = INF;                              // start as far away as possible
   HitInformation info = HitInformation();
   bool hit = false;
@@ -152,6 +164,7 @@ Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {   // this is messing u
       currentDist = eye.distTo(info.hit_point);
 
       hit = true;
+      info.normal = (info.hit_point - s.pos).normalized();
       info.ambient = s.ambient;
       info.diffuse = s.diffuse;
       info.specular = s.specular;
