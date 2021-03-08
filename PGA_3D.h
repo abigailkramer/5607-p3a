@@ -217,11 +217,14 @@ struct HitInformation {
   Color ambient, diffuse, specular, transmissive;
   Point3D hit_point;
   Dir3D normal;
-  float t;
+  int ns;
+  float ior;
+  double t;
 };
 
 struct Sphere{
-  float radius,ns,ior;
+  float radius,ior;
+  int ns;
   Point3D pos;
   Color ambient, diffuse, specular, transmissive;
 
