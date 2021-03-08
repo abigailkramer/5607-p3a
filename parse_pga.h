@@ -197,6 +197,7 @@ void parseSceneFile(std::string fileName){
       PointLight p = PointLight();
       p.intensity = Color(r,g,b);
       p.location = Point3D(x,y,z);
+      point_lights.push_back(p);
     }
     else if (cmd == "spot_light:") {
       float r,g,b,px,py,pz,dx,dy,dz,a1,a2;
@@ -208,6 +209,7 @@ void parseSceneFile(std::string fileName){
       s.direction = Dir3D(dx,dy,dz);
       s.angle1 = a1;
       s.angle2 = a2;
+      spot_lights.push_back(s);
     }
     else if (cmd == "ambient_light:") {
       float r,g,b;

@@ -23,6 +23,7 @@
 
 //enables use of M_PI
 #define _USE_MATH_DEFINES
+#define INF ((unsigned) ~0)
 
 //#3D PGA
 #include "PGA_3D.h"
@@ -33,7 +34,7 @@
 //Scene file parser
 #include "parse_pga.h"
 
-bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius){
+bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit){
   Dir3D dir = rayLine.dir();
   float a = dot(dir,dir);
   Dir3D toStart = (rayStart - sphereCenter);
@@ -42,14 +43,25 @@ bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCen
   float discr = b*b - 4*a*c;
   if (discr < 0) return false;
   else{
+
+    hit->hit_point = rayStart + dir*discr;
+    hit->normal = (hit->hit_point - sphereCenter).normalized();
+
     float t0 = (-b + sqrt(discr))/(2*a);
     float t1 = (-b - sqrt(discr))/(2*a);
+
+    if (t0 > 0) {
+      hit->t = t0;
+    } else if (t1 > 0) {
+      hit->t = t1;
+    }
+
     if (t0 > 0 || t1 > 0) return true;
   }
   return false;
 }
 
-bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius){
+bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit){
   Point3D projPoint = dot(rayLine,sphereCenter)*rayLine;      //Project to find closest point between circle center and line [proj(sphereCenter,rayLine);]
   float distSqr = projPoint.distToSqr(sphereCenter);          //Point-line distance (squared)
   float d2 = distSqr/(sphereRadius*sphereRadius);             //If distance is larger than radius, then...
@@ -58,82 +70,91 @@ bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, 
   Point3D p1 = projPoint - rayLine.dir()*w;                   //Add/subtract above distance to find hit points
   Point3D p2 = projPoint + rayLine.dir()*w; 
 
-  if (dot((p1-rayStart),rayLine.dir()) >= 0) return true;     //Is the first point in same direction as the ray line?
-  if (dot((p2-rayStart),rayLine.dir()) >= 0) return true;     //Is the second point in same direction as the ray line?
+  hit->normal = (hit->hit_point - sphereCenter).normalized();
+  hit->t = w;
+
+  if (dot((p1-rayStart),rayLine.dir()) >= 0){ 
+    hit->hit_point = p1;
+    return true;     //Is the first point in same direction as the ray line?
+  }
+  if (dot((p2-rayStart),rayLine.dir()) >= 0){ 
+    hit->hit_point = p2;
+    return true;     //Is the second point in same direction as the ray line?
+  }
   return false;
 }
 
-Color ApplyLightingModel(Point3D rayStart, Line3D rayLine, Point3D hit_point, Dir3D normal, Sphere sphere) {  // Scene scene, Ray ray, HitInformation hit
-  Color contribution = Color(0,0,0);
+Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo, Sphere sphere) {  // Scene scene, Ray ray, HitInformation hit
+  float r_cont = 0;
+  float g_cont = 0;
+  float b_cont = 0;
 
   for (auto& dl : dir_lights) {
-    Line3D shadow = vee(hit_point,dl.direction).normalized();
+    Line3D shadow = vee(hitInfo.hit_point,dl.direction).normalized();
 
   }
 
-  for (auto& pl : point_lights) {
-    Dir3D lightDir = (pl.location - hit_point);
-    Line3D shadow = vee(hit_point,lightDir).normalized();
-    // HitInformation shadow_hit;
-    bool blocked;
-    // bool blocked = FindIntersection(scene, shadow, &shadow_hit);
-    // rn go through spheres and see if shadow intersects
-      // would need to go through all primitives in scene
+  for (auto& pl : point_lights) {     // get it so it drops off w/ distance
+    Point3D p = hitInfo.hit_point;
+    Dir3D lightDir = (pl.location - p);
+    Line3D shadow = vee(p,lightDir).normalized();
+    HitInformation shadow_hit = HitInformation();
+    bool blocked = false;
+
     for (auto& s : spheres) {
-      bool blocked = raySphereIntersect(eye,rayLine,s.pos,s.radius);
-      // shadow_hit.t -- quadratic equation solution
+      if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
+        blocked = true;
+      }
     }
+
+    float dist = pl.location.distTo(p);
+    if (blocked && (shadow_hit.t < dist)) continue;
+
+    Dir3D N = hitInfo.normal;
+    Dir3D L = lightDir;
+    float n_l = std::max(dot(N,L),0.f);
     
-    if (blocked) { // && (shadow_hit.t < Distance(Light.pos - hit_point))
-      continue;    // in shadow - move to next light
-    }
-    // dot(shadow,normal)*sphere.diffuse;
+    Dir3D V = p - eye;
+    Dir3D R = L - 2*(dot(L,N)*N);
+    float v_r = pow(std::max(dot(V,R),0.f), sphere.ns);
+
+    r_cont += ((n_l * sphere.diffuse.r) + (v_r * sphere.specular.r)) * pl.intensity.r;
+    g_cont += ((n_l * sphere.diffuse.g) + (v_r * sphere.specular.g)) * pl.intensity.g;
+    b_cont += ((n_l * sphere.diffuse.b) + (v_r * sphere.specular.b)) * pl.intensity.b;
+      // I = Ie + KaIa + sigmaL( Kd(N*L) + Ks(V*R)^ns )*SL IL /// <-- no reflection or refraction   
+
   }
 
   for (auto& sl : spot_lights) {
     
   }
 
-  // for each light L
-    // create a ray to the light
-    // w/ the hit_point as origin
-    // the direction is L.pos - hit_point
-  // check for intersection w/ light
-  // if none, skip specular & diffuse (i think kinda rare?)
+  // ambient_light * ambient response
+  r_cont += (ambient_light.r*sphere.ambient.r);
+  g_cont += (ambient_light.g*sphere.ambient.g);
+  b_cont += (ambient_light.b*sphere.ambient.b);
 
+  Color contribution = Color(r_cont,g_cont,b_cont);
 
-  // go through direct, point, spot, and ambient lights
-
-  return background;
+  return contribution;
 }
 
-Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {
-  bool hit_something;
-  // HitInformation hit;      // struct containing hit point, normal, etc
+Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {   // this is messing up the order rn?
 
-  // hit_something = FindIntersection(scene, ray, &hit);
-  // ^ need to go through objects in the scene (look at closer objects first)
-
+  float currentDist = INF;                              // start as far away as possible
+  HitInformation info = HitInformation();
   for (auto& s : spheres) {
-    hit_something = raySphereIntersect(eye,rayLine,s.pos,s.radius);
-
-    if (hit_something) {
-      // get hit point
-      Point3D projPoint = dot(rayLine,s.pos)*rayLine;
-      float distSqr = projPoint.distToSqr(s.pos);
-      float d2 = distSqr/(s.radius*s.radius);
-      float w = s.radius*sqrt(1-d2);
-      Point3D hit = projPoint + rayLine.dir()*w;        // + or - ?
-
-      // get normal
-      Dir3D norm = (hit - s.pos).normalized();
-
-      return ApplyLightingModel(rayStart,rayLine,hit,norm,s);
-    } else {
-      return background;
-    }    
+    bool hit = raySphereIntersect(eye,rayLine,s.pos,s.radius,&info);
+    if (hit) {
+      if (eye.distTo(info.hit_point) > currentDist) {   // move from back to front
+        continue;
+      }
+      currentDist = eye.distTo(info.hit_point);
+      Color color = ApplyLightingModel(eye,rayLine,info,s);
+      return color;
+    } 
   }
-
+  
   return background;
 
 }
@@ -172,25 +193,23 @@ int main(int argc, char** argv){
       Dir3D rayDir = (p - eye); 
       Line3D rayLine = vee(eye,rayDir).normalized();  //Normalizing here is optional
 
-      // intersect w/ scene
-      // no intersect? -> set pixel to background color
-
-      // EvaluateRayTree - return the color to set pixel to
       // Color color = EvaluateRayTree(eye,rayLine);
+      // outputImg.setPixel(i,j,color);
 
+      float currentDist = INF;                              // start as far away as possible
+      HitInformation info = HitInformation();
       for (auto& s : spheres) {
-        bool hit = raySphereIntersect(eye,rayLine,s.pos,s.radius);
-        if (hit) outputImg.setPixel(i,j,s.ambient);
+        bool hit = raySphereIntersect(eye,rayLine,s.pos,s.radius,&info);
+        if (hit) {
+          if (eye.distTo(info.hit_point) > currentDist) {   // move from back to front
+            continue;
+          }
+          currentDist = eye.distTo(info.hit_point);
+          Color color = ApplyLightingModel(eye,rayLine,info,s);
+          outputImg.setPixel(i,j,color);
+        } 
       }
 
-      // for (int sphere = 0; sphere < numSpheres; sphere++) { // this for loop put somewhere in EvaluateRayTree
-      //   Sphere s = spheres[sphere];
-      //   bool hit = raySphereIntersect(eye,rayLine,s.pos,s.radius);
-      //   Color color;
-      //   if (hit) outputImg.setPixel(i,j,s.ambient);   // need more nuance w/ light --> very basic here
-      // }
-
-      // compute illumination @ visual point
     }
   }
 
