@@ -77,8 +77,9 @@ bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, 
     return true;     //Is the first point in same direction as the ray line?
   }
   if (dot((p2-rayStart),rayLine.dir()) >= 0){    
-    hit->t = w;
+    // hit->t = w;
     hit->hit_point = p2;
+    hit->t = (hit->hit_point - rayStart).magnitude();
     return true;     //Is the second point in same direction as the ray line?
   }
   return false;
@@ -90,26 +91,47 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
   float g_cont = (ambient_light.g*hitInfo.ambient.g);
   float b_cont = (ambient_light.b*hitInfo.ambient.b);
 
-  for (auto& dl : dir_lights) {
-    Line3D shadow = vee(hitInfo.hit_point,dl.direction).normalized();
+  for (auto& light : dir_lights) {
+    Point3D p = hitInfo.hit_point;
+    Dir3D lightDir = light.direction;
 
+    // shadows
+    Line3D shadow = vee(hitInfo.hit_point,light.direction).normalized();
+
+    Dir3D N = hitInfo.normal;
+    Dir3D L = lightDir.normalized();
+    float n_l = std::max(dot(N,L),0.f);
+    
+    Dir3D V = (eye - p).normalized();
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
+    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
+
+    float contribute_r = ((n_l*hitInfo.diffuse.r) + (v_r*hitInfo.specular.r))*light.intensity.r;
+    float contribute_g = ((n_l*hitInfo.diffuse.g) + (v_r*hitInfo.specular.g))*light.intensity.g;
+    float contribute_b = ((n_l*hitInfo.diffuse.b) + (v_r*hitInfo.specular.b))*light.intensity.b;
+
+    r_cont += contribute_r;
+    g_cont += contribute_g;
+    b_cont += contribute_b;
   }
 
   for (auto& light : point_lights) {     // get it so it drops off w/ distance
     Point3D p = hitInfo.hit_point;
-    Dir3D lightDir = (light.location - p);
+    Dir3D lightDir = (light.location - p).normalized();
+
     Line3D shadow = vee(p,lightDir).normalized();
     HitInformation shadow_hit = HitInformation();
     bool blocked = false;
 
-    // for (auto& s : spheres) {
-    //   if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
-    //     blocked = true;
-    //   }
-    // }
+    for (auto& s : spheres) {
+      if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
+        blocked = true;
+      }
+    }
 
-    float dist = p.distTo(light.location);
-    // if (blocked && (shadow_hit.t < dist)) continue;
+    double bias = 0.01;
+    double dist = p.distTo(light.location);    
+    if (blocked && (shadow_hit.t < dist) && shadow_hit.t > bias) continue;
 
     Dir3D N = hitInfo.normal;
     Dir3D L = lightDir.normalized();
@@ -119,17 +141,9 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
     Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
     float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
 
-    float contribute_r = 0.0;
-    float contribute_g = 0.0;
-    float contribute_b = 0.0;
-
-    contribute_r += ((n_l * hitInfo.diffuse.r));
-    contribute_g += ((n_l * hitInfo.diffuse.g));
-    contribute_b += ((n_l * hitInfo.diffuse.b));
-
-    contribute_r += ((v_r * hitInfo.specular.r));     // not doing what it should be
-    contribute_g += ((v_r * hitInfo.specular.g));
-    contribute_b += ((v_r * hitInfo.specular.b));
+    float contribute_r = ((n_l * hitInfo.diffuse.r)) + ((v_r * hitInfo.specular.r));
+    float contribute_g = ((n_l * hitInfo.diffuse.g)) + ((v_r * hitInfo.specular.g));
+    float contribute_b = ((n_l * hitInfo.diffuse.b)) + ((v_r * hitInfo.specular.b));
 
     float attenuation = 1.0 / (1.0 + dist*dist);
 
@@ -140,12 +154,37 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
     r_cont += contribute_r;
     g_cont += contribute_g;
     b_cont += contribute_b;
-      // I = Ie + KaIa + sigmaL( Kd(N*L) + Ks(V*R)^ns )*SL*IL /// <-- no reflection or refraction   
-
   }
 
-  for (auto& sl : spot_lights) {
+  for (auto& light : spot_lights) {
+    Point3D p = hitInfo.hit_point;
+    Dir3D lightDir = (light.location - p);
+
+    // shadows
+    float dist = p.distTo(light.location);
+    // check angle range for shadows?? since it illumination = 0 if not in range
+
+    Dir3D N = hitInfo.normal;
+    Dir3D L = lightDir.normalized();
+    float n_l = std::max(dot(N,L),0.f);              // between direction of the light source & surface normal
     
+    Dir3D V = (eye - p).normalized();
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
+    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
+
+    float contribute_r = ((n_l * hitInfo.diffuse.r)) + ((v_r * hitInfo.specular.r));
+    float contribute_g = ((n_l * hitInfo.diffuse.g)) + ((v_r * hitInfo.specular.g));
+    float contribute_b = ((n_l * hitInfo.diffuse.b)) + ((v_r * hitInfo.specular.b));
+
+    float attenuation = 1.0 / (1.0 + dist*dist);
+
+    contribute_r *= light.intensity.r*attenuation;      // only if w/i certain angle range
+    contribute_g *= light.intensity.g*attenuation;
+    contribute_b *= light.intensity.b*attenuation;
+
+    r_cont += contribute_r;
+    g_cont += contribute_g;
+    b_cont += contribute_b;
   }
 
   return Color(r_cont,g_cont,b_cont);
