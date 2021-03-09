@@ -44,16 +44,17 @@ bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCen
   if (discr < 0) return false;
   else{
 
-    hit->hit_point = rayStart + dir*discr;
-    hit->normal = (hit->hit_point - sphereCenter).normalized();
-
     float t0 = (-b + sqrt(discr))/(2*a);
     float t1 = (-b - sqrt(discr))/(2*a);
 
     if (t0 > 0) {
       hit->t = t0;
+      // hit->hit_point = rayStart + dir*t0;
+      // hit->normal = (hit->hit_point - sphereCenter).normalized();
     } else if (t1 > 0) {
       hit->t = t1;
+      // hit->hit_point = rayStart + dir*t1;
+      // hit->normal = (hit->hit_point - sphereCenter).normalized();
     }
 
     if (t0 > 0 || t1 > 0) return true;
@@ -61,7 +62,7 @@ bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCen
   return false;
 }
 
-bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit){
+bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit) {
   Point3D projPoint = dot(rayLine,sphereCenter)*rayLine;      //Project to find closest point between circle center and line [proj(sphereCenter,rayLine);]
   float distSqr = projPoint.distToSqr(sphereCenter);          //Point-line distance (squared)
   float d2 = distSqr/(sphereRadius*sphereRadius);             //If distance is larger than radius, then...
@@ -70,14 +71,13 @@ bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, 
   Point3D p1 = projPoint - rayLine.dir()*w;                   //Add/subtract above distance to find hit points
   Point3D p2 = projPoint + rayLine.dir()*w; 
 
-  hit->normal = (hit->hit_point - sphereCenter).normalized();
-  hit->t = w;
-
-  if (dot((p1-rayStart),rayLine.dir()) >= 0){ 
+  if (dot((p1-rayStart),rayLine.dir()) >= 0){
     hit->hit_point = p1;
+    hit->t = w;
     return true;     //Is the first point in same direction as the ray line?
   }
-  if (dot((p2-rayStart),rayLine.dir()) >= 0){ 
+  if (dot((p2-rayStart),rayLine.dir()) >= 0){    
+    hit->t = w;
     hit->hit_point = p2;
     return true;     //Is the second point in same direction as the ray line?
   }
@@ -102,14 +102,14 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
     HitInformation shadow_hit = HitInformation();
     bool blocked = false;
 
-    for (auto& s : spheres) {
-      if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
-        blocked = true;
-      }
-    }
+    // for (auto& s : spheres) {
+    //   if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
+    //     blocked = true;
+    //   }
+    // }
 
     float dist = p.distTo(light.location);
-    if (blocked && (shadow_hit.t < dist)) continue;
+    // if (blocked && (shadow_hit.t < dist)) continue;
 
     Dir3D N = hitInfo.normal;
     Dir3D L = lightDir.normalized();
@@ -152,18 +152,22 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
 }
 
 Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {
-  float currentDist = INF;                              // start as far away as possible
+  double currentDist = INF;                              // start as far away as possible
   HitInformation info = HitInformation();
+  HitInformation possible = HitInformation();
   bool hit = false;
 
   for (auto& s : spheres) {
-    if (raySphereIntersect(eye,rayLine,s.pos,s.radius,&info)) {
-      if (eye.distTo(info.hit_point) > currentDist) {   // move from back to front
+    if (raySphereIntersect(eye,rayLine,s.pos,s.radius,&possible)) {
+
+      if (eye.distTo(possible.hit_point) > currentDist) {   // move from back to front
         continue;
       }
-      currentDist = eye.distTo(info.hit_point);
+      currentDist = eye.distTo(possible.hit_point);
 
       hit = true;
+      info.hit_point = possible.hit_point;
+      info.t = possible.t;
       info.normal = (info.hit_point - s.pos).normalized();
       info.ambient = s.ambient;
       info.diffuse = s.diffuse;
