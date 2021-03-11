@@ -1,6 +1,6 @@
 ## Project 3A
 
-**Additional Features (15pts):
+**Additional Features (15pts):**
 - Shadows
 - Multiple Light Sources
 - Directional Light Sources
@@ -24,5 +24,6 @@ Lights **not all from the same direction*
 
 ![shadows_and_light](https://user-images.githubusercontent.com/59031606/110732132-2f8c0280-81e9-11eb-8ef9-94bb92a88cad.png)
 
-Reflection
+**Reflection and Depth of Field**
+
 ![reflection](https://user-images.githubusercontent.com/80165299/110856395-3401fb00-827d-11eb-965a-8d42f7fa8b71.png)
