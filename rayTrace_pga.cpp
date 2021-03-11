@@ -122,8 +122,9 @@ bool intersect(Point3D rayStart, Line3D rayLine, HitInformation *info) {
   return hit;
 }
 
-Line3D Reflect (Line3D &ray, Line3D &normal){
-  return (ray - 2.0*std::max(dot(ray,normal),0.f)*normal.magnitude());
+Line3D Reflect (Line3D ray, Line3D normal, Point3D hit){
+  Plane3D plane = dot(hit, normal);
+  return transform(normal,plane);
 }
 
 Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo, int depth) {
@@ -158,10 +159,14 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
     HitInformation shadow_hit = HitInformation();
     bool blocked = false;
     Dir3D L = (light.location - p).normalized();
-    Line3D shadow = vee(p,L).normalized();
+    Line3D shadow = vee(shadow_point,light.location).normalized();
+    // Line3D shadow = vee(p,L).normalized();
 
     for (auto& s : spheres) {
-      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) blocked = true;
+      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) {
+        blocked = true;
+        break;
+      } 
     }
 
     double dist = p.distTo(light.location);  
@@ -206,17 +211,9 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
 
   } // spot lights
 
-  // Line3D mirror = Reflect(rayLine,N);
-  // Color mirror_color = EvaluateRayTree(p,mirror,depth+1);
-  // color = color + (hitInfo.specular * mirror_color);
-
-  // HitInformation mirror_info = HitInformation();
-  // bool mirror_hit = intersect(shadow_point,mirror,&mirror_info);
-  // if (mirror_hit) {
-  //   float dist = 1.0/ (1.0 + pow(p.distTo(mirror_info.hit_point),2));
-  //   Color mirror_col = hitInfo.specular * EvaluateRayTree(p,mirror,depth+1) * dist;
-  //   color = color + (mirror_col * dist);
-  // }
+  Line3D mirror = Reflect(rayLine,hitInfo.normal,hitInfo.hit_point);
+  Color mirror_color = EvaluateRayTree(p,mirror,depth+1);
+  color = color + (hitInfo.specular * mirror_color);
 
   //Refract
 
