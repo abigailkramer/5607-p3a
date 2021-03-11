@@ -12,13 +12,14 @@
 - Reflection
 
 **Art Contest (1pt)**
+
 ---
 
 Lights **not all from the same direction*
 
 | Directional Light     | Point Light       | Spot Light  |
 | -------------- | -------------- | -------------- |
-| ![directional_sphere](https://user-images.githubusercontent.com/59031606/110731867-b4c2e780-81e8-11eb-806d-f43d1b63ffbc.png)    | ![point_sphere](https://user-images.githubusercontent.com/59031606/110731901-ca381180-81e8-11eb-8ea4-fd422cfb5c2e.png)    |  ![spot_sphere](https://user-images.githubusercontent.com/59031606/110731959-dde37800-81e8-11eb-8965-b812c40c72d4.png)   |
+| ![directional_sphere](https://user-images.githubusercontent.com/59031606/110731867-b4c2e780-81e8-11eb-806d-f43d1b63ffbc.png)    | ![point_sphere](https://user-images.githubusercontent.com/59031606/110860730-c2c54680-8282-11eb-952e-9ded0f1e1ae5.png)    |  ![spot_sphere](https://user-images.githubusercontent.com/59031606/110731959-dde37800-81e8-11eb-8965-b812c40c72d4.png)   |
 
 
 **Shadows, Color & Specularity, Multiple Lights**
