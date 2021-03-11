@@ -27,3 +27,7 @@ Lights **not all from the same direction*
 **Reflection and Depth of Field**
 
 ![reflection](https://user-images.githubusercontent.com/80165299/110856395-3401fb00-827d-11eb-965a-8d42f7fa8b71.png)
+
+**Ambient Light **
+
+![center-sphere](https://user-images.githubusercontent.com/80165299/110858362-9cea7280-827f-11eb-85bd-097a63962888.png)
