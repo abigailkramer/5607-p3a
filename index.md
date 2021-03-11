@@ -34,4 +34,5 @@ Lights **not all from the same direction*
 ![center-sphere](https://user-images.githubusercontent.com/80165299/110858362-9cea7280-827f-11eb-85bd-097a63962888.png)
 
 **Artistic Image**
+
 ![Artistic Image](https://user-images.githubusercontent.com/80165299/110858760-14200680-8280-11eb-920b-d0e6fcd5f3c3.png)
