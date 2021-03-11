@@ -269,6 +269,7 @@ struct SpotLight{
   Dir3D direction;
   float angle1;         // points at angle < angle1, light behaves like point
   float angle2;         // points at angle > angle2, light contributes nothing
+                        // angle1 < angle < angle2 - fall off linearly
                         // points in between, light should fall off smoothly (linear is fine)
                         // ^^ to not have a sharp edge b/w shadowed and lit area
 

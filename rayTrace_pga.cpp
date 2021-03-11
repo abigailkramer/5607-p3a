@@ -155,8 +155,6 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
   } // directional lights
 
   for (auto& light : point_lights) {
-    // Line3D L = vee(light.location,p).normalized();
-    // Line3D shadow = vee(shadow_point,light.location).normalized();
     HitInformation shadow_hit = HitInformation();
     bool blocked = false;
     Dir3D L = (light.location - p).normalized();
@@ -180,33 +178,32 @@ Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo
   } // point lights
 
   for (auto& light : spot_lights) {
-    Dir3D L = (light.location - p).normalized();
-    Line3D shadow = vee(p,L).normalized();
     HitInformation shadow_hit = HitInformation();
     bool blocked = false;
+    Dir3D L = (light.location - p).normalized();
+    Line3D shadow = vee(p, light.location);
+    Line3D lightLine = vee(light.location,L);
 
     for (auto& s : spheres) {
-      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) {
-        blocked = true;
-      }
+      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) blocked = true;
     }
 
-    float angle = acos(dot(light.direction,shadow.dir()) / (light.direction.magnitude()*shadow.dir().magnitude()));
+    double angle = dot(shadow,lightLine) / (shadow.magnitude() * lightLine.magnitude());
     angle *= (180/M_PI);
+    double dist = p.distTo(light.location);  
+    if (blocked && shadow_hit.t < dist || (angle > light.angle2)) continue;
 
-    double dist = abs(p.distTo(light.location));
-    if ((blocked && shadow_hit.t < dist) || angle>light.angle2) continue;
-
-    double attenuation = 1.0;
-    // if (angle < light.angle1) attenuation = 1.0 / (1.0 + dist*dist);
-    // else attenuation = 1.0 / dist;
+    float attenuation = 1.0 / (1.0 + dist*dist);
+    if (angle > light.angle1) attenuation *= 1.0 / dist;    
 
     float n_l = std::max(dot(N,L),0.f);
     Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
     float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
 
     Color contribution = ((hitInfo.diffuse*n_l) + (hitInfo.specular*v_r));
-    color = color + ((contribution*light.intensity) * attenuation);
+    contribution = contribution*(light.intensity*attenuation);
+    color = color + contribution;
+
   } // spot lights
 
   // Line3D mirror = Reflect(rayLine,N);
