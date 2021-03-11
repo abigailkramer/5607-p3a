@@ -1,6 +1,6 @@
-## Project 3a
+## Project 3A
 
-**Additional Features (15pts):** (choose the strongest - shadows, multiple lights, & ???)
+**Additional Features (15pts):
 - Shadows
 - Multiple Light Sources
 - Directional Light Sources
@@ -8,8 +8,8 @@
 
 **Extra Features (10pts):**
 - Spot Light Sources
+- Depth of Field
 - Reflection
-- Refraction (maybe)
 
 ---
 
