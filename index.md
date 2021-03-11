@@ -4,9 +4,10 @@
 - Shadows
 - Multiple Light Sources
 - Directional Light Sources
-- Spot Light Sources (finish)
-- Reflection
-- Refraction
 
-**Extra Features:**
+
+**Extra Features (10pts):**
+- Spot Light Sources
+- Reflection
+- Refraction (maybe)
 
