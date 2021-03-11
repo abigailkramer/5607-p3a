@@ -11,7 +11,23 @@ struct Color{
 
   Color(float r, float g, float b) : r(r), g(g), b(b) {}
   Color() : r(0), g(0), b(0) {}
+
+  Color operator*(float factor);
+  Color operator+(Color col);
+  Color operator*(Color col);
 };
+
+inline Color Color::operator*(float factor){
+  return Color(r*factor,g*factor,b*factor);
+}
+
+inline Color Color::operator+(Color col){
+  return Color(r+col.r,g+col.g,b+col.b);
+}
+
+inline Color Color::operator*(Color col){
+  return Color(r*col.r,g*col.g,b*col.b);
+}
 
 struct Image{
   int width, height;
