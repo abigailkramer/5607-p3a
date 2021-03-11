@@ -17,9 +17,17 @@
 
 Lights **not all from the same direction*
 
-| Directional Light     | Point Light       | Spot Light  |
-| -------------- | -------------- | -------------- |
-| ![directional_sphere](https://user-images.githubusercontent.com/59031606/110731867-b4c2e780-81e8-11eb-806d-f43d1b63ffbc.png)    | ![point_sphere](https://user-images.githubusercontent.com/59031606/110860730-c2c54680-8282-11eb-952e-9ded0f1e1ae5.png)    |  ![spot_sphere](https://user-images.githubusercontent.com/59031606/110731959-dde37800-81e8-11eb-8965-b812c40c72d4.png)   |
+**Directional**
+
+![directional_sphere](https://user-images.githubusercontent.com/59031606/110731867-b4c2e780-81e8-11eb-806d-f43d1b63ffbc.png)
+
+**Point**
+
+![point_sphere](https://user-images.githubusercontent.com/59031606/110860730-c2c54680-8282-11eb-952e-9ded0f1e1ae5.png)
+
+**Spot**
+
+![spot_sphere](https://user-images.githubusercontent.com/59031606/110731959-dde37800-81e8-11eb-8965-b812c40c72d4.png)
 
 
 **Shadows, Color & Specularity, Multiple Lights**
@@ -33,6 +41,10 @@ Lights **not all from the same direction*
 **Ambient Light**
 
 ![center-sphere](https://user-images.githubusercontent.com/80165299/110858362-9cea7280-827f-11eb-85bd-097a63962888.png)
+
+**Extra Test Image - overhead white light, and centered purple(ish) light**
+
+![test](https://user-images.githubusercontent.com/59031606/110863866-ee4a3000-8286-11eb-99b5-51cebd66d614.png)
 
 **Artistic Image**
 
