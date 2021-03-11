@@ -216,7 +216,8 @@ struct Dir3D{
 struct HitInformation {
   Color ambient, diffuse, specular, transmissive;
   Point3D hit_point;
-  Dir3D normal;
+  // Dir3D normal;
+  Line3D normal;
   int ns;
   float ior;
   double t;
@@ -229,7 +230,23 @@ struct Sphere{
   Color ambient, diffuse, specular, transmissive;
 
   Sphere() {} ;
+};
 
+struct Triangle{
+  Point3D v1,v2,v3;
+  Dir3D n1,n2,n3;
+  Dir3D norm;
+  bool is_normal;
+
+  Triangle() {} ;
+};
+
+struct NormalTriangle{
+  Point3D v1,v2,v3;
+  Dir3D n1,n2,n3;
+  Dir3D norm;
+
+  NormalTriangle() {} ;
 };
 
 struct DirLight{
@@ -250,9 +267,10 @@ struct SpotLight{
   Color intensity;
   Point3D location;
   Dir3D direction;
-  float angle1;         // points at angles < angle1, light behaves like point
-  float angle2;         // points at angles > angle2, light contributes nothing
+  float angle1;         // points at angle < angle1, light behaves like point
+  float angle2;         // points at angle > angle2, light contributes nothing
                         // points in between, light should fall off smoothly (linear is fine)
+                        // ^^ to not have a sharp edge b/w shadowed and lit area
 
   SpotLight() {} ;
 };

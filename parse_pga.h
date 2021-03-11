@@ -20,24 +20,26 @@ std::string imgName = "raytraced.bmp";
 
 //Camera Parmaters
 Point3D eye = Point3D(0,0,0); 
-Dir3D forward = Dir3D(0,0,1).normalized();
+Dir3D forward = Dir3D(0,0,-1).normalized();
 Dir3D up = Dir3D(0,1,0).normalized();
-Dir3D right = Dir3D(-1,0,0).normalized();
+Dir3D right = Dir3D(1,0,0).normalized();
 float halfAngleVFOV = 45; 
 
 //Scene Parameters
 int max_vertices = 0;
 int max_normals = 0;
-Point3D *vertex;                // need to delete somewhere
-int vert_pos = 0;
-MultiVector *normal;
-int norm_pos = 0;
+std::vector<Point3D> vertices;    // allows access by number
+int vert_num = 0;
+std::vector<Dir3D> normals;
+int norm_num = 0;
 
 // add triangle (v1,v2,v2) & normal_triangle (v1,v2,v3,n1,n2,n3)
 
 Color background = Color(0,0,0);
 
 std::vector<Sphere> spheres;
+std::vector<Triangle> triangles;
+std::vector<NormalTriangle> norm_triangles;
 
 //Material Parameters - to set as "state" vars
 Color ambient_color = Color(0,0,0);
@@ -114,36 +116,50 @@ void parseSceneFile(std::string fileName){
       int max;
       file >> max;
       max_vertices = max;
-      vertex = new Point3D[max_vertices];
     }
     else if (cmd == "max_normals:") {
       int max;
       file >> max;
       max_normals = max;
-      normal = new MultiVector[max_normals];
     }
     else if (cmd == "vertex:") {
       float x,y,z;
       file >> x >> y >> z;
-      vertex[vert_pos] = Point3D(x,y,z);
-      vert_pos++;
+      if (vert_num == max_vertices) {
+        continue;
+      }
+      vertices.push_back(Point3D(x,y,z));
+      vert_num++;
     }
     else if (cmd == "normal:") {
       float x,y,z;
       file >> x >> y >> z;
-      normal[norm_pos] = MultiVector(x,y,z);
-      norm_pos++;
+      if (norm_num == max_normals) {
+        continue;
+      }
+      normals.push_back(Dir3D(x,y,z));
+      norm_num++;
     }
     else if (cmd == "triangle:") {
       int v1,v2,v3;
       file >> v1 >> v2 >> v3;
-      // add triangle using vertex[v1], vertex[v2], and vertex[v3]
+      Triangle t = Triangle();
+      t.v1 = vertices[v1];
+      t.v2 = vertices[v2];
+      t.v3 = vertices[v3];
+      triangles.push_back(t);
     }
     else if (cmd == "normal_triangle:") {
       int v1,v2,v3,n1,n2,n3;
       file >> v1 >> v2 >> v3 >> n1 >> n2 >> n3;
-      // add normal_triangle using vertex[v1], vertex[v2], and vertex[v3]
-      // with normals normal[n1], normal[n2], and normal[n3]
+      NormalTriangle t = NormalTriangle();
+      t.v1 = vertices[v1];
+      t.v2 = vertices[v2];
+      t.v3 = vertices[v3];
+      t.n1 = normals[v1];
+      t.n2 = normals[v2];
+      t.n3 = normals[v3];     
+      norm_triangles.push_back(t);       
     }
     else if (cmd == "sphere:") {
       float x,y,z,r;
@@ -240,15 +256,14 @@ void parseSceneFile(std::string fileName){
 
   if ((dot(right,forward) != 0) || (dot(forward,up) != 0) || (dot(up,right) != 0)) {
 
-    // up
     Dir3D new_up = (dot(up,forward) / dot(forward,forward))*forward;
-    up = up - new_up;
-    up = up.normalized();
+    up = (up - new_up).normalized();
 
-    // right
-    Dir3D new_right = (dot(right,forward) / dot(forward,forward))*forward;
-    right = right - new_right;
-    right = right.normalized();
+    Dir3D new_right = (dot(right,up) / dot(up,up))*up;
+    right = (right - new_right).normalized();
+
+    Dir3D new_forward = (dot(forward,right) / dot(right,right))*right;
+    forward = (forward - new_forward).normalized();
 
   }
 

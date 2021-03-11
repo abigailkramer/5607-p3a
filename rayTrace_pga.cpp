@@ -34,6 +34,10 @@
 //Scene file parser
 #include "parse_pga.h"
 
+
+Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo, int depth);
+Color EvaluateRayTree(Point3D rayStart, Line3D rayLine, int depth);
+
 bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit){
   Dir3D dir = rayLine.dir();
   float a = dot(dir,dir);
@@ -62,6 +66,11 @@ bool raySphereIntersect_fast(Point3D rayStart, Line3D rayLine, Point3D sphereCen
   return false;
 }
 
+bool rayTriangleIntersect(Point3D rayStart, Line3D rayLine, Triangle t, HitInformation *hit) {
+
+  return false;
+}
+
 bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, float sphereRadius, HitInformation *hit) {
   Point3D projPoint = dot(rayLine,sphereCenter)*rayLine;      //Project to find closest point between circle center and line [proj(sphereCenter,rayLine);]
   float distSqr = projPoint.distToSqr(sphereCenter);          //Point-line distance (squared)
@@ -72,154 +81,160 @@ bool raySphereIntersect(Point3D rayStart, Line3D rayLine, Point3D sphereCenter, 
   Point3D p2 = projPoint + rayLine.dir()*w; 
 
   if (dot((p1-rayStart),rayLine.dir()) >= 0){
-    hit->hit_point = p1;
     hit->t = w;
+    hit->hit_point = p1;
+    hit->normal = vee(sphereCenter,hit->hit_point).normalized();
+    // hit->normal = (hit->hit_point - sphereCenter).normalized();
     return true;     //Is the first point in same direction as the ray line?
   }
   if (dot((p2-rayStart),rayLine.dir()) >= 0){    
-    // hit->t = w;
+    hit->t = w;
     hit->hit_point = p2;
-    hit->t = (hit->hit_point - rayStart).magnitude();
+    hit->normal = vee(sphereCenter,hit->hit_point).normalized();
+    // hit->normal = (hit->hit_point - sphereCenter).normalized();
     return true;     //Is the second point in same direction as the ray line?
   }
   return false;
 }
 
-Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo) {  // Scene scene, Ray ray, HitInformation hit
-  // start with ambient_light * ambient response
-  float r_cont = (ambient_light.r*hitInfo.ambient.r);
-  float g_cont = (ambient_light.g*hitInfo.ambient.g);
-  float b_cont = (ambient_light.b*hitInfo.ambient.b);
-
-  for (auto& light : dir_lights) {
-    Point3D p = hitInfo.hit_point;
-    Dir3D lightDir = light.direction;
-
-    // shadows
-    Line3D shadow = vee(hitInfo.hit_point,light.direction).normalized();
-
-    Dir3D N = hitInfo.normal;
-    Dir3D L = lightDir.normalized();
-    float n_l = std::max(dot(N,L),0.f);
-    
-    Dir3D V = (eye - p).normalized();
-    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
-    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
-
-    float contribute_r = ((n_l*hitInfo.diffuse.r) + (v_r*hitInfo.specular.r))*light.intensity.r;
-    float contribute_g = ((n_l*hitInfo.diffuse.g) + (v_r*hitInfo.specular.g))*light.intensity.g;
-    float contribute_b = ((n_l*hitInfo.diffuse.b) + (v_r*hitInfo.specular.b))*light.intensity.b;
-
-    r_cont += contribute_r;
-    g_cont += contribute_g;
-    b_cont += contribute_b;
-  }
-
-  for (auto& light : point_lights) {     // get it so it drops off w/ distance
-    Point3D p = hitInfo.hit_point;
-    Dir3D lightDir = (light.location - p).normalized();
-
-    Line3D shadow = vee(p,lightDir).normalized();
-    HitInformation shadow_hit = HitInformation();
-    bool blocked = false;
-
-    for (auto& s : spheres) {
-      if (raySphereIntersect(p,shadow,s.pos,s.radius,&shadow_hit)) {
-        blocked = true;
-      }
-    }
-
-    double bias = 0.01;
-    double dist = p.distTo(light.location);    
-    if (blocked && (shadow_hit.t < dist) && shadow_hit.t > bias) continue;
-
-    Dir3D N = hitInfo.normal;
-    Dir3D L = lightDir.normalized();
-    float n_l = std::max(dot(N,L),0.f);              // between direction of the light source & surface normal
-    
-    Dir3D V = (eye - p).normalized();
-    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
-    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
-
-    float contribute_r = ((n_l * hitInfo.diffuse.r)) + ((v_r * hitInfo.specular.r));
-    float contribute_g = ((n_l * hitInfo.diffuse.g)) + ((v_r * hitInfo.specular.g));
-    float contribute_b = ((n_l * hitInfo.diffuse.b)) + ((v_r * hitInfo.specular.b));
-
-    float attenuation = 1.0 / (1.0 + dist*dist);
-
-    contribute_r *= light.intensity.r*attenuation;
-    contribute_g *= light.intensity.g*attenuation;
-    contribute_b *= light.intensity.b*attenuation;
-
-    r_cont += contribute_r;
-    g_cont += contribute_g;
-    b_cont += contribute_b;
-  }
-
-  for (auto& light : spot_lights) {
-    Point3D p = hitInfo.hit_point;
-    Dir3D lightDir = (light.location - p);
-
-    // shadows
-    float dist = p.distTo(light.location);
-    // check angle range for shadows?? since it illumination = 0 if not in range
-
-    Dir3D N = hitInfo.normal;
-    Dir3D L = lightDir.normalized();
-    float n_l = std::max(dot(N,L),0.f);              // between direction of the light source & surface normal
-    
-    Dir3D V = (eye - p).normalized();
-    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
-    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
-
-    float contribute_r = ((n_l * hitInfo.diffuse.r)) + ((v_r * hitInfo.specular.r));
-    float contribute_g = ((n_l * hitInfo.diffuse.g)) + ((v_r * hitInfo.specular.g));
-    float contribute_b = ((n_l * hitInfo.diffuse.b)) + ((v_r * hitInfo.specular.b));
-
-    float attenuation = 1.0 / (1.0 + dist*dist);
-
-    contribute_r *= light.intensity.r*attenuation;      // only if w/i certain angle range
-    contribute_g *= light.intensity.g*attenuation;
-    contribute_b *= light.intensity.b*attenuation;
-
-    r_cont += contribute_r;
-    g_cont += contribute_g;
-    b_cont += contribute_b;
-  }
-
-  return Color(r_cont,g_cont,b_cont);
-}
-
-Color EvaluateRayTree(Point3D rayStart, Line3D rayLine) {
+bool intersect(Point3D rayStart, Line3D rayLine, HitInformation *info) {
   double currentDist = INF;                              // start as far away as possible
-  HitInformation info = HitInformation();
   HitInformation possible = HitInformation();
   bool hit = false;
 
   for (auto& s : spheres) {
     if (raySphereIntersect(eye,rayLine,s.pos,s.radius,&possible)) {
-
-      if (eye.distTo(possible.hit_point) > currentDist) {   // move from back to front
-        continue;
-      }
+      if (eye.distTo(possible.hit_point) > currentDist) continue;     // move from back to front
       currentDist = eye.distTo(possible.hit_point);
 
       hit = true;
-      info.hit_point = possible.hit_point;
-      info.t = possible.t;
-      info.normal = (info.hit_point - s.pos).normalized();
-      info.ambient = s.ambient;
-      info.diffuse = s.diffuse;
-      info.specular = s.specular;
-      info.transmissive = s.transmissive;
-      info.ns = s.ns;
-      info.ior = s.ior;
+      info->hit_point = possible.hit_point;
+      info->t = possible.t;
+      info->normal = possible.normal;
+      info->ambient = s.ambient;
+      info->diffuse = s.diffuse;
+      info->specular = s.specular;
+      info->transmissive = s.transmissive;
+      info->ns = s.ns;
+      info->ior = s.ior;
     }
   }
+  return hit;
+}
 
-  if (hit) {
-    Color color = ApplyLightingModel(eye,rayLine,info);
-    return color;
+Line3D Reflect (Line3D &ray, Line3D &normal){
+  return (ray - 2.0*std::max(dot(ray,normal),0.f)*normal.magnitude());
+}
+
+Color ApplyLightingModel(Point3D rayStart, Line3D rayLine,HitInformation hitInfo, int depth) {
+  Color color = Color(0,0,0);
+  Point3D p = hitInfo.hit_point;
+  Point3D shadow_point = p + hitInfo.normal.dir()*0.001;
+  Dir3D N = hitInfo.normal.dir();
+  Dir3D V = (eye - p).normalized();
+
+  for (auto& light : dir_lights) {
+    Dir3D L = light.direction.normalized();
+    Line3D shadow = vee(p,L).normalized();
+    HitInformation shadow_hit = HitInformation();
+    bool blocked = false;
+
+    for (auto& s : spheres) {
+      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) {
+        blocked = true;
+      }
+    }
+    if (blocked) continue;
+
+    float n_l = std::max(dot(N,L),0.f);
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
+    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
+
+    Color contribution = ((hitInfo.diffuse*n_l) + (hitInfo.specular*v_r)) * light.intensity;
+    color = color + contribution;
+  } // directional lights
+
+  for (auto& light : point_lights) {
+    // Line3D L = vee(light.location,p).normalized();
+    // Line3D shadow = vee(shadow_point,light.location).normalized();
+    HitInformation shadow_hit = HitInformation();
+    bool blocked = false;
+    Dir3D L = (light.location - p).normalized();
+    Line3D shadow = vee(p,L).normalized();
+
+    for (auto& s : spheres) {
+      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) blocked = true;
+    }
+
+    double dist = p.distTo(light.location);  
+    if (blocked && shadow_hit.t < dist) continue;
+
+    float n_l = std::max(dot(N,L),0.f);
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
+    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
+
+    Color contribution = ((hitInfo.diffuse*n_l) + (hitInfo.specular*v_r));
+    float attenuation = 1.0 / (1.0 + dist*dist);
+    contribution = contribution*(light.intensity*attenuation);
+    color = color + contribution;
+  } // point lights
+
+  for (auto& light : spot_lights) {
+    Dir3D L = (light.location - p).normalized();
+    Line3D shadow = vee(p,L).normalized();
+    HitInformation shadow_hit = HitInformation();
+    bool blocked = false;
+
+    for (auto& s : spheres) {
+      if (raySphereIntersect(shadow_point,shadow,s.pos,s.radius,&shadow_hit)) {
+        blocked = true;
+      }
+    }
+
+    float angle = acos(dot(light.direction,shadow.dir()) / (light.direction.magnitude()*shadow.dir().magnitude()));
+    angle *= (180/M_PI);
+
+    double dist = abs(p.distTo(light.location));
+    if ((blocked && shadow_hit.t < dist) || angle>light.angle2) continue;
+
+    double attenuation = 1.0;
+    // if (angle < light.angle1) attenuation = 1.0 / (1.0 + dist*dist);
+    // else attenuation = 1.0 / dist;
+
+    float n_l = std::max(dot(N,L),0.f);
+    Dir3D R = (L - 2*(dot(L,N)*N)).normalized();
+    float v_r = pow(std::max(dot(V,R),0.f), hitInfo.ns);
+
+    Color contribution = ((hitInfo.diffuse*n_l) + (hitInfo.specular*v_r));
+    color = color + ((contribution*light.intensity) * attenuation);
+  } // spot lights
+
+  // Line3D mirror = Reflect(rayLine,N);
+  // Color mirror_color = EvaluateRayTree(p,mirror,depth+1);
+  // color = color + (hitInfo.specular * mirror_color);
+
+  // HitInformation mirror_info = HitInformation();
+  // bool mirror_hit = intersect(shadow_point,mirror,&mirror_info);
+  // if (mirror_hit) {
+  //   float dist = 1.0/ (1.0 + pow(p.distTo(mirror_info.hit_point),2));
+  //   Color mirror_col = hitInfo.specular * EvaluateRayTree(p,mirror,depth+1) * dist;
+  //   color = color + (mirror_col * dist);
+  // }
+
+  //Refract
+
+  color = color + (ambient_light*hitInfo.ambient);
+
+  return color;
+} // ApplyLightingModel
+
+Color EvaluateRayTree(Point3D rayStart, Line3D rayLine, int depth) {
+  bool hit_something;
+  HitInformation hit = HitInformation();
+
+  hit_something = intersect(rayStart,rayLine,&hit);
+  if (hit_something && depth < max_depth) { 
+    return ApplyLightingModel(rayStart,rayLine,hit,depth); 
   } else {
     return background;
   }
@@ -245,12 +260,6 @@ int main(int argc, char** argv){
   Image outputImg = Image(img_width,img_height);
   auto t_start = std::chrono::high_resolution_clock::now();
 
-  for (int i = 0; i < img_width; i++) {       // just a placeholder rn
-    for (int j = 0; j < img_height; j++) {
-      outputImg.setPixel(i,j,background);
-    }
-  }
-
   for (int i = 0; i < img_width; i++) {
     for (int j = 0; j < img_height; j++) {
       float u = (halfW - (imgW)*((i+0.5)/imgW));
@@ -259,7 +268,7 @@ int main(int argc, char** argv){
       Dir3D rayDir = (p - eye); 
       Line3D rayLine = vee(eye,rayDir).normalized();  //Normalizing here is optional
 
-      Color color = EvaluateRayTree(eye,rayLine);
+      Color color = EvaluateRayTree(eye,rayLine,0);
       outputImg.setPixel(i,j,color);
 
     }
