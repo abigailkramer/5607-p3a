@@ -23,4 +23,6 @@ Lights **not all from the same direction*
 **Shadows, Color & Specularity, Multiple Lights**
 
 ![shadows_and_light](https://user-images.githubusercontent.com/59031606/110732132-2f8c0280-81e9-11eb-8ef9-94bb92a88cad.png)
+
+Reflection
 ![reflection](https://user-images.githubusercontent.com/80165299/110856395-3401fb00-827d-11eb-965a-8d42f7fa8b71.png)
