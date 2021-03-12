@@ -1,5 +1,10 @@
 ## Project 3A
 
+**Team Members:**
+- Bayan Tawakalna (tawak005)
+- Abigail Kramer (krame669)
+
+
 **Additional Features (15pts):**
 - Shadows
 - Multiple Light Sources
