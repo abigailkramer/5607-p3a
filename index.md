@@ -18,6 +18,12 @@
 
 **Art Contest (1pt)**
 
+**Brief Overview**
+
+We based the structure of our program on the pseudocode presented in lecture. This helped us to organize each computation, along with making everything easy to follow. In PGA_3D.h we created structs for Spheres, HitInformation, and each light type. Each of which contained information that was important to a calculation involving that object. We were then able to use <vector> to efficiently keep lists of each item added from the text file. In image_lib.h we added operators for the Color struct, so we could efficiently calculate additions and multiplications for colors without going through each channel for each computation. We encountered some trouble when implementing shadows, which ended up being a lack of offset for the hit point.
+  
+  Since we stored our structs in lists, achieving the multiple light sources came fairly easy. Implementing the light sources (directional and spot), were simple to figure out once point lights had been established. Our extra features are the spot light sources and depth of field. We included reflection to showcase the depth of field, since the reflection itself isn't quite accurate.
+
 ---
 
 Lights **not all from the same direction*
