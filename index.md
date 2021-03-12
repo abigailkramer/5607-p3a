@@ -43,7 +43,7 @@ Lights **not all from the same direction*
 
 **Shadows, Color & Specularity, Multiple Lights**
 
-![shadows_and_light](https://user-images.githubusercontent.com/59031606/110732132-2f8c0280-81e9-11eb-8ef9-94bb92a88cad.png)
+![spheres2](https://user-images.githubusercontent.com/59031606/110883913-ce783380-82a9-11eb-9731-91a2e6e2d55f.png)
 
 **Reflection and Depth of Field**
 
